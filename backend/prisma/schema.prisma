@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Coffee {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tags      CoffeeTag[]
+  cartItems CartItem[]
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coffees CoffeeTag[]
+}
+
+model CoffeeTag {
+  coffee   Coffee @relation(fields: [coffeeId], references: [id])
+  coffeeId String
+
+  tag   Tag    @relation(fields: [tagId], references: [id])
+  tagId String
+
+  @@id([coffeeId, tagId])
+}
+
+model Cart {
+  id                String        @id @default(uuid())
+  userId            String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  status            CartStatus
+  statusPayment     PaymentStatus
+  dataTimeCompleted DateTime?
+
+  order Order?     @relation("CartOrder")
+  items CartItem[]
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  cartId        String   @unique
+  paymentMethod String
+  createdAt     DateTime @default(now())
+
+  cart Cart @relation("CartOrder", fields: [cartId], references: [id])
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart   Cart   @relation(fields: [cartId], references: [id])
+  cartId String
+
+  coffee   Coffee @relation(fields: [coffeeId], references: [id])
+  coffeeId String
+}
+
+enum CartStatus {
+  ABANDONADO
+  AGUARDANDO_PAGAMENTO
+  FINALIZADO
+}
+
+enum PaymentStatus {
+  APROVADO
+  ANALISE
+  PENDENTE
+  CANCELADO
+}
